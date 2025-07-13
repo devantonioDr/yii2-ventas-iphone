@@ -1,0 +1,48 @@
+version: '3.2'
+
+services:
+
+  frontend:
+    build: frontend
+    ports:
+      - 20080:80
+    volumes:
+      # Re-use local composer cache via host-volume
+      - ~/.composer-docker/cache:/root/.composer/cache:delegated
+      # Mount source-code for development
+      - ./:/app
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - 3388:3306
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      # - "./db:/docker-entrypoint-initdb.d" # this is how we persist an SQL db even when the container stops
+      - "./mysql-data:/var/lib/mysql"
+    command: >
+      --max_allowed_packet=64M
+      --innodb_buffer_pool_size=512M
+      --innodb_log_file_size=256M
+      --innodb_lock_wait_timeout=3
+      --innodb_flush_log_at_trx_commit=2
+      --transaction-isolation=READ-COMMITTED
+
+  # pgsql:
+  #   image: postgres:9.5
+  #   ports:
+  #     - 5432:5432
+  #   environment:
+  #    - POSTGRES_DB=yii2advanced
+  #    - POSTGRES_USER=yii2advanced
+  #    - POSTGRES_PASSWORD=secret
+  #   volumes:
+  #     - ./postgres-data:/var/lib/postgresql/data # Data folder
