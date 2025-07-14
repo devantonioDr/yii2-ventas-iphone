@@ -1,12 +1,11 @@
 <?php
 use yii\helpers\Html;
-use common\services\GananciaService;
+use common\services\telefono\GananciaService;
 
 /** @var $telefono common\models\telefono\Telefono */
 /** @var $gastos array */
 
-$gananciaService = new GananciaService();
-$ganancia = $gananciaService->calcular($telefono);
+$ganancia = GananciaService::calcular($telefono);
 ?>
 
 <div class="desglose-factura">
@@ -55,17 +54,18 @@ $ganancia = $gananciaService->calcular($telefono);
 
     <div class="seccion">
         <h4>Cálculo de Ganancia</h4>
+        <p class="text-muted small"><i>Después de deducir todos los gastos.</i></p>
         <div class="item">
             <span><b>Ganancia Total</b></span>
-            <span class="text-right"><b>RD$ <?= number_format($ganancia->neta, 2) ?></b></span>
+            <span class="text-right"><b>RD$ <?= number_format($ganancia['neta'], 2) ?></b></span>
         </div>
         <div class="item">
-            <span>Ganancia Socio (<?= $ganancia->porcentajeSocio ?>%)</span>
-            <span class="text-right text-warning">RD$ <?= number_format($ganancia->socio, 2) ?></span>
+            <span>Ganancia Socio (<?= $ganancia['porcentajeSocio'] ?>%)</span>
+            <span class="text-right text-warning">RD$ <?= number_format($ganancia['socio'], 2) ?></span>
         </div>
         <div class="item">
-            <span>Ganancia Empresa (<?= $ganancia->porcentajeEmpresa ?>%)</span>
-            <span class="text-right text-success">RD$ <?= number_format($ganancia->empresa, 2) ?></span>
+            <span>Ganancia Empresa (<?= $ganancia['porcentajeEmpresa'] ?>%)</span>
+            <span class="text-right text-success">RD$ <?= number_format($ganancia['empresa'], 2) ?></span>
         </div>
     </div>
 </div> 

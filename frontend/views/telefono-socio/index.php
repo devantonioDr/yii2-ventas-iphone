@@ -2,6 +2,7 @@
 
 use yii\helpers\Html;
 use yii\grid\GridView;
+use common\services\telefono\GananciaService;
 
 /* @var $this yii\web\View */
 /* @var $searchModel common\models\telefono\TelefonoSocioSearch */
@@ -23,13 +24,14 @@ $this->params['breadcrumbs'][] = $this->title;
             </div>
 
             <div class="box-body">
+                <div class="table-responsive">
                 <?= GridView::widget([
                     'dataProvider' => $dataProvider,
                     'filterModel' => $searchModel,
                     'tableOptions' => ['class' => 'table table-striped table-bordered'],
                     'columns' => [
                         ['class' => 'yii\grid\SerialColumn'],
-                        'id',
+                        // 'id',
                         'nombre',
                         [
                             'attribute' => 'margen_ganancia',
@@ -38,24 +40,42 @@ $this->params['breadcrumbs'][] = $this->title;
                             },
                             'filter' => false,
                         ],
+                        // [
+                        //     'label' => 'Monto Invertido',
+                        //     'value' => function ($model) use ($ganciasSocios) {
+                        //         $ganancia = $ganciasSocios[$model->id] ?? [];
+                        //         return 'RD$ ' . number_format($ganancia['precioAdquisicion'] ?? 0, 2);
+                        //     },
+                        //     'filter' => false,
+                        // ],
+                        // [
+                        //     'label' => 'Ganancia Pendiente Socio',
+                        //     'value' => function ($model) use ($ganciasSocios) {
+                        //         $ganancia = $ganciasSocios[$model->id] ?? [];
+                        //         return 'RD$ ' . number_format($ganancia['socio'] ?? 0, 2);
+                        //     },
+                        //     'filter' => false,
+                        // ],
+                        // [
+                        //     'label' => 'Ganancia Pendiente Empresa',
+                        //     'value' => function ($model) use ($ganciasSocios) {
+                        //         $ganancia = $ganciasSocios[$model->id] ?? [];
+                        //         return 'RD$ ' . number_format($ganancia['empresa'] ?? 0, 2);
+                        //     },
+                        //     'filter' => false,
+                        // ],
                         [
                             'attribute' => 'telefonos_count',
-                            'label' => 'Teléfonos',
+                            'label' => 'Teléfonos Pendientes por Pagar',
                             'value' => function ($model) {
-                                return $model->getTelefonos()->count() . ' teléfono(s)';
+                                return $model->getTelefonosPendientesPorPagar()->count();
                             },
                             'filter' => false,
                         ],
                         [
                             'class' => 'yii\grid\ActionColumn',
-                            'template' => '{view} {update} {delete}',
+                            'template' => '{update} {delete} {pagar}',
                             'buttons' => [
-                                'view' => function ($url, $model) {
-                                    return Html::a('<i class="fa fa-eye"></i>', $url, [
-                                        'class' => 'btn btn-info btn-xs',
-                                        'title' => 'Ver',
-                                    ]);
-                                },
                                 'update' => function ($url, $model) {
                                     return Html::a('<i class="fa fa-pencil"></i>', $url, [
                                         'class' => 'btn btn-warning btn-xs',
@@ -72,10 +92,22 @@ $this->params['breadcrumbs'][] = $this->title;
                                         ],
                                     ]);
                                 },
+                                'pagar' => function ($url, $model) {
+                                    $ganancia = \common\services\telefono\GananciaService::calcularTotalGanaciaPendienteSocio($model->id);
+                                    $montoTotalAPagar = $ganancia['precioAdquisicion'] + $ganancia['socio'];
+                                    if ($montoTotalAPagar > 0) {
+                                        return Html::a('<i class="fa fa-money"></i>', ['pagar', 'id' => $model->id], [
+                                            'class' => 'btn btn-success btn-xs',
+                                            'title' => 'Pagar',
+                                        ]);
+                                    }
+                                    return '';
+                                },
                             ],
                         ],
                     ],
                 ]); ?>
+                </div>
             </div>
         </div>
     </div>

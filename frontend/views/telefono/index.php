@@ -3,7 +3,7 @@
 use yii\helpers\Html;
 use yii\grid\GridView;
 use yii\widgets\ActiveForm;
-use common\services\GananciaService;
+use common\services\telefono\GananciaService;
 use common\models\telefono\Telefono;
 
 /* @var $this yii\web\View */
@@ -165,8 +165,7 @@ $this->registerCss("
                                     'attribute' => 'ganancia_absoluta',
                                     'label' => 'Ganancia Neta RD$',
                                     'value' => function ($model) {
-                                        $service = new GananciaService();
-                                        return number_format($service->calcular($model)->neta, 2);
+                                        return number_format(\common\services\telefono\GananciaService::calcular($model)['neta'], 2);
                                     },
                                     'contentOptions' => ['class' => 'text-right text-success'],
                                 ],
@@ -174,9 +173,8 @@ $this->registerCss("
                                     'attribute' => 'ganancia_socio',
                                     'label' => 'Gan. Socio RD$',
                                     'value' => function ($model) {
-                                        $service = new GananciaService();
-                                        $ganancia = $service->calcular($model);
-                                        return number_format($ganancia->socio, 2) . ' (' . $ganancia->porcentajeSocio . '%)';
+                                        $ganancia = \common\services\telefono\GananciaService::calcular($model);
+                                        return number_format($ganancia['socio'], 2) . ' (' . $ganancia['porcentajeSocio'] . '%)';
                                     },
                                     'contentOptions' => ['class' => 'text-right text-warning'],
                                 ],
@@ -184,9 +182,8 @@ $this->registerCss("
                                     'attribute' => 'ganancia_empresa',
                                     'label' => 'Gan. Empresa RD$',
                                     'value' => function ($model) {
-                                        $service = new GananciaService();
-                                        $ganancia = $service->calcular($model);
-                                        return number_format($ganancia->empresa, 2) . ' (' . $ganancia->porcentajeEmpresa . '%)';
+                                        $ganancia = \common\services\telefono\GananciaService::calcular($model);
+                                        return number_format($ganancia['empresa'], 2) . ' (' . $ganancia['porcentajeEmpresa'] . '%)';
                                     },
                                     'contentOptions' => ['class' => 'text-right text-info'],
                                 ],

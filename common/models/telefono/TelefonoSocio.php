@@ -57,4 +57,10 @@ class TelefonoSocio extends ActiveRecord
     {
         return $this->hasMany(Telefono::class, ['socio_id' => 'id']);
     }
+
+    public function getTelefonosPendientesPorPagar()
+    {
+        return $this->hasMany(Telefono::class, ['socio_id' => 'id'])
+            ->where(['status' => Telefono::STATUS_VENDIDO]);
+    }
 } 

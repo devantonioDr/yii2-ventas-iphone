@@ -20,7 +20,7 @@ services:
       - REDIS_REPLICATION_MODE=master
 
   mysql:
-    image: mysql:8.0
+    image: mysql:5.7
     ports:
       - 3388:3306
     environment:

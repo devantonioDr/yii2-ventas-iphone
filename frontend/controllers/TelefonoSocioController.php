@@ -8,7 +8,9 @@ use common\models\telefono\TelefonoSocioSearch;
 use Yii;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
+use common\services\telefono\GananciaService;
 use yii\web\NotFoundHttpException;
+use common\models\telefono\Telefono;
 
 /**
  * TelefonoSocioController maneja las operaciones relacionadas con socios de teléfonos
@@ -37,10 +39,19 @@ class TelefonoSocioController extends Controller
     {
         $searchModel = new TelefonoSocioSearch();
         $dataProvider = $searchModel->search(Yii::$app->request->queryParams);
+        $ganciasSocios = [];
+
+        $socios = $dataProvider->getModels();
+
+        foreach ($socios as $socio) {
+            $ganancia = GananciaService::calcularTotalGanaciaPendienteSocio($socio->id);
+            $ganciasSocios[$socio->id] = $ganancia;
+        }
 
         return $this->render('index', [
             'searchModel' => $searchModel,
             'dataProvider' => $dataProvider,
+            'ganciasSocios' => $ganciasSocios,
         ]);
     }
 
@@ -73,6 +84,49 @@ class TelefonoSocioController extends Controller
     }
 
 
+    public function actionUpdate($id)
+    {
+        $model = $this->findModel($id);
+
+        if (Yii::$app->request->isPost && $model->load(Yii::$app->request->post()) && $model->save()) {
+            Yii::$app->session->setFlash('success', 'Socio actualizado exitosamente');
+            return $this->redirect(['index']);
+        }
+
+        $ganancia = GananciaService::calcularTotalGanaciaPendienteSocio($id);
+
+        return $this->render('update', [
+            'model' => $model,
+            'ganancia' => $ganancia,
+        ]);
+    }
+
+
+    public function actionPagar($id)
+    {
+        $model = $this->findModel($id);
+        $ganancia = GananciaService::calcularTotalGanaciaPendienteSocio($id);
+        $montoTotalAPagar = $ganancia['precioAdquisicion'] + $ganancia['socio'];
+
+        $telefonosPendientes = Telefono::find()
+            ->where(['socio_id' => $id, 'status' => Telefono::STATUS_VENDIDO])
+            ->all();
+
+        if (Yii::$app->request->isPost) {
+            // Aquí se ejecutará el UseCase para procesar el pago
+            Yii::$app->session->setFlash('success', 'El pago se ha procesado exitosamente (simulación).');
+            return $this->redirect(['index']);
+        }
+
+        return $this->render('pagar', [
+            'model' => $model,
+            'ganancia' => $ganancia,
+            'montoTotalAPagar' => $montoTotalAPagar,
+            'telefonos' => $telefonosPendientes,
+        ]);
+    }
+
+
     /**
      * Obtiene la información de un socio específico via AJAX
      * @return array
@@ -98,5 +152,21 @@ class TelefonoSocioController extends Controller
             'success' => false,
             'message' => 'Socio no encontrado'
         ];
+    }
+
+    /**
+     * Finds the TelefonoSocio model based on its primary key value.
+     * If the model is not found, a 404 HTTP exception will be thrown.
+     * @param int $id ID
+     * @return TelefonoSocio the loaded model
+     * @throws NotFoundHttpException if the model cannot be found
+     */
+    protected function findModel($id)
+    {
+        if (($model = TelefonoSocio::findOne(['id' => $id])) !== null) {
+            return $model;
+        }
+
+        throw new NotFoundHttpException('The requested page does not exist.');
     }
 }
