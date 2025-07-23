@@ -27,6 +27,14 @@ class RevertirPagoTelefonoSocioUseCase
                 throw new \Exception("El pago con ID $pagoId no existe.");
             }
 
+            // Eliminar fotos asociadas
+            foreach ($pago->photos as $photo) {
+                if (file_exists($photo->path)) {
+                    unlink($photo->path);
+                }
+                $photo->delete();
+            }
+
             $telefonos = Telefono::find()
                 ->where(['telefono_socio_pago_id' => $pagoId])
                 ->all();

@@ -160,7 +160,14 @@ foreach ($telefonos as $telefono) {
          <div class="box-footer no-print">
             <div class="row">
                 <div class="col-xs-12">
-                    <?php $form = ActiveForm::begin(['options' => ['class' => 'pull-right']]); ?>
+                    <?php $form = ActiveForm::begin(['options' => ['enctype' => 'multipart/form-data', 'class' => 'pull-right']]); ?>
+                    
+                    <div class="form-group">
+                        <?= Html::label('Adjuntar Fotos de Depósito', 'photos', ['class' => 'control-label']) ?>
+                        <?= Html::fileInput('photos[]', null, ['class' => 'form-control', 'multiple' => true, 'id' => 'pago-photos']) ?>
+                    </div>
+                    <div id="preview-container" class="row"></div>
+
                     <?= Html::submitButton('<i class="fa fa-credit-card"></i> Confirmar y Realizar Pago', ['class' => 'btn btn-success btn-lg']) ?>
                     <?php ActiveForm::end(); ?>
                 </div>
@@ -168,3 +175,58 @@ foreach ($telefonos as $telefono) {
         </div>
     </div>
 </div>
+
+<?php
+$this->registerJs(<<<JS
+    let selectedFiles = [];
+
+    document.getElementById('pago-photos').addEventListener('change', function(event) {
+        const files = event.target.files;
+        for (const file of files) {
+            selectedFiles.push(file);
+        }
+        renderPreviews();
+    });
+
+    function renderPreviews() {
+        const previewContainer = document.getElementById('preview-container');
+        previewContainer.innerHTML = '';
+        selectedFiles.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = `
+                    <div class="col-md-3" style="margin-bottom: 10px;">
+                        <img src="\${e.target.result}" class="img-responsive" style="width:100%; height:auto;"/>
+                        <button type="button" class="btn btn-danger btn-xs remove-photo" data-index="\${index}" style="position:absolute; top:5px; right:15px;">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                previewContainer.innerHTML += preview;
+            }
+            reader.readAsDataURL(file);
+        });
+        updateFileInput();
+    }
+
+    document.getElementById('preview-container').addEventListener('click', function(event) {
+        if (event.target.classList.contains('remove-photo') || event.target.parentElement.classList.contains('remove-photo')) {
+            const button = event.target.closest('.remove-photo');
+            const index = button.getAttribute('data-index');
+            selectedFiles.splice(index, 1);
+            renderPreviews();
+        }
+    });
+
+    function updateFileInput() {
+        const dataTransfer = new DataTransfer();
+        selectedFiles.forEach(file => {
+            dataTransfer.items.add(file);
+        });
+        document.getElementById('pago-photos').files = dataTransfer.files;
+    }
+JS
+,
+    \yii\web\View::POS_END
+);
+?>

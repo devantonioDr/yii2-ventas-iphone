@@ -12,6 +12,7 @@ use common\services\telefono\GananciaService;
 use yii\web\NotFoundHttpException;
 use common\models\telefono\Telefono;
 use common\usecases\socio_pago\PagarTelefonoSocioUseCase;
+use yii\web\UploadedFile;
 
 /**
  * TelefonoSocioController maneja las operaciones relacionadas con socios de teléfonos
@@ -115,7 +116,23 @@ class TelefonoSocioController extends Controller
 
         if (Yii::$app->request->isPost) {
             try {
-                $useCase = new PagarTelefonoSocioUseCase();
+                $photos = UploadedFile::getInstancesByName('photos');
+                $photoPaths = [];
+                if (!empty($photos)) {
+                    $uploadDir = 'uploads/socios/' . $id . '/pagos/';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0777, true);
+                    }
+                    foreach ($photos as $photo) {
+                        $path = $uploadDir . Yii::$app->security->generateRandomString() . '.' . $photo->extension;
+                        if ($photo->saveAs($path)) {
+                            $photoPaths[] = $path;
+                        } else {
+                            throw new \Exception('Error al guardar una de las fotos.');
+                        }
+                    }
+                }
+                $useCase = new PagarTelefonoSocioUseCase($photoPaths);
                 $pago = $useCase->execute($id);
                 Yii::$app->session->setFlash('success', 'El pago se ha procesado exitosamente.');
                 return $this->redirect(['telefono-socio-pago/view', 'id' => $pago->id]);

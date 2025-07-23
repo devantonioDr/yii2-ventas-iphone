@@ -103,4 +103,14 @@ class TelefonoSocioPago extends ActiveRecord
     {
         return $this->hasMany(Telefono::class, ['telefono_socio_pago_id' => 'id']);
     }
+
+    /**
+     * Gets query for [[TelefonoSocioPagoPhotos]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getPhotos()
+    {
+        return $this->hasMany(TelefonoSocioPagoPhoto::class, ['pago_id' => 'id']);
+    }
 } 

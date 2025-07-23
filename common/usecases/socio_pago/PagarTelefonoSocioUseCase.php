@@ -4,13 +4,19 @@ namespace common\usecases\socio_pago;
 
 use common\models\telefono\Telefono;
 use common\models\telefono\TelefonoSocioPago;
+use common\models\telefono\TelefonoSocioPagoPhoto;
 use common\services\telefono\GananciaService;
 use common\usecases\wallet\AcreditarUseCase;
-use common\usecases\wallet\DebitarUseCase;
 use yii\db\Exception;
 
 class PagarTelefonoSocioUseCase
 {
+    private $photoPaths;
+
+    public function __construct(array $photoPaths = [])
+    {
+        $this->photoPaths = $photoPaths;
+    }
     public function execute(int $socioId)
     {
         $transaction = \Yii::$app->db->beginTransaction();
@@ -43,6 +49,16 @@ class PagarTelefonoSocioUseCase
 
             if (!$pago->save()) {
                 throw new Exception('Error al guardar el pago del socio. ' . json_encode($pago->errors));
+            }
+            if (!empty($this->photoPaths)) {
+                foreach ($this->photoPaths as $path) {
+                    $pagoPhoto = new TelefonoSocioPagoPhoto();
+                    $pagoPhoto->pago_id = $pago->id;
+                    $pagoPhoto->path = $path;
+                    if (!$pagoPhoto->save()) {
+                        throw new Exception('Error al guardar la foto del pago. ' . json_encode($pagoPhoto->errors));
+                    }
+                }
             }
 
             foreach ($telefonosPendientes as $telefono) {

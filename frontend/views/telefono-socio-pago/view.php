@@ -93,6 +93,25 @@ foreach ($model->telefonos as $telefono) {
         </div>
     </div>
 
+    <?php if (!empty($model->photos)): ?>
+    <div class="box box-success">
+        <div class="box-header with-border">
+            <h3 class="box-title">Fotos del Pago</h3>
+        </div>
+        <div class="box-body">
+            <div class="row">
+                <?php foreach ($model->photos as $photo): ?>
+                    <div class="col-md-3">
+                        <a href="#" data-toggle="modal" data-target="#image-modal" data-path="<?= Yii::getAlias('@web/' . $photo->path) ?>">
+                            <?= Html::img(Yii::getAlias('@web/' . $photo->path), ['class' => 'img-responsive img-thumbnail']) ?>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
 
     <div class="box box-info">
         <div class="box-header with-border">
@@ -173,4 +192,26 @@ foreach ($model->telefonos as $telefono) {
             ]); ?>
         </div>
     </div>
-</div> 
+</div>
+
+<div class="modal fade" id="image-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <img id="modal-image" src="" class="img-responsive" style="width:100%;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php
+$this->registerJs(<<<JS
+$('#image-modal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
+    var path = button.data('path');
+    var modal = $(this);
+    modal.find('#modal-image').attr('src', path);
+});
+JS
+, \yii\web\View::POS_READY);
+?> 
