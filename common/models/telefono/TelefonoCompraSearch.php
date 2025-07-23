@@ -2,15 +2,14 @@
 
 namespace common\models\telefono;
 
-use Yii;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
-use common\models\telefono\Telefono;
+use common\models\telefono\TelefonoCompra;
 
 /**
- * TelefonoSearch represents the model behind the search form of `common\models\telefono\Telefono`.
+ * TelefonoCompraSearch represents the model behind the search form of `common\models\telefono\TelefonoCompra`.
  */
-class TelefonoSearch extends Telefono
+class TelefonoCompraSearch extends TelefonoCompra
 {
     /**
      * {@inheritdoc}
@@ -18,9 +17,8 @@ class TelefonoSearch extends Telefono
     public function rules()
     {
         return [
-            [['id', 'socio_id'], 'integer'],
-            [['imei', 'marca', 'modelo', 'status'], 'safe'],
-            [['fecha_ingreso'], 'safe'],
+            [['id'], 'integer'],
+            [['fecha_compra', 'suplidor', 'codigo_factura'], 'safe'],
         ];
     }
 
@@ -42,20 +40,18 @@ class TelefonoSearch extends Telefono
      */
     public function search($params)
     {
-        $query = Telefono::find()
-            ->where(['not', ['status' => Telefono::STATUS_IN_DRAFT]])
-            ->with('socio', 'telefonoCompra');
+        $query = TelefonoCompra::find()->with('telefonos');
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
             'sort' => [
                 'defaultOrder' => [
-                    'fecha_ingreso' => SORT_DESC,
+                    'fecha_compra' => SORT_DESC,
                     'id' => SORT_DESC,
                 ]
             ],
             'pagination' => [
-                'pageSize' => 20,
+                'pageSize' => 10,
             ],
         ]);
 
@@ -66,12 +62,17 @@ class TelefonoSearch extends Telefono
         }
 
         // grid filtering conditions
-        $query->andFilterWhere(['like', 'imei', $this->imei])
-            ->andFilterWhere(['marca' => $this->marca])
-            ->andFilterWhere(['modelo' => $this->modelo])
-            ->andFilterWhere(['socio_id' => $this->socio_id])
-            ->andFilterWhere(['status' => $this->status]);
+        $query->andFilterWhere([
+            'id' => $this->id,
+        ]);
+
+        $query->andFilterWhere(['like', 'suplidor', $this->suplidor])
+              ->andFilterWhere(['like', 'codigo_factura', $this->codigo_factura]);
+
+        if (!empty($this->fecha_compra)) {
+            $query->andFilterWhere(['DATE(fecha_compra)' => $this->fecha_compra]);
+        }
 
         return $dataProvider;
     }
-}
+} 

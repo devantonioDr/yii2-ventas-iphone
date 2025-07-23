@@ -38,31 +38,27 @@ class BatchInsertTelefonosUseCase
         $socioId,
         $socioPorcentaje
     ) {
-        $transaction = Yii::$app->db->beginTransaction();
-
+        $batch_id = Yii::$app->security->generateRandomString(36);
         $this->findSocio($socioId);
 
-        try {
-            foreach ($imeis as $imei) {
-                $imei = trim($imei);
-                if (empty($imei)) continue;
-                $this->insertTelefono(
-                    $imei,
-                    $marca,
-                    $modelo,
-                    $precioAdquisicion,
-                    $precioVentaRecomendado,
-                    $socioId,
-                    $socioPorcentaje
-                );
-                $this->successCount++;
-            }
-            $transaction->commit();
-            return true;
-        } catch (\Exception $e) {
-            $transaction->rollBack();
-            throw $e;
+        if(empty($imeis)) throw new \Exception("No se proporcionaron IMEIs.");
+
+        foreach ($imeis as $imei) {
+            $imei = trim($imei);
+            if (empty($imei)) continue;
+            $this->insertTelefono(
+                $batch_id,
+                $imei,
+                $marca,
+                $modelo,
+                $precioAdquisicion,
+                $precioVentaRecomendado,
+                $socioId,
+                $socioPorcentaje
+            );
+            $this->successCount++;
         }
+        return true;
     }
 
     private function findSocio($socioId): ?TelefonoSocio
@@ -76,15 +72,19 @@ class BatchInsertTelefonosUseCase
     /**
      * Inserta un teléfono individual
      * 
+     * @param string $batch_id
      * @param string $imei
      * @param string $marca
      * @param string $modelo
      * @param float $precioAdquisicion
      * @param float $precioVentaRecomendado
-     * @param TelefonoSocio|null $socio
+     * @param int|null $socioId
+     * @param float $socioPorcentaje
+     * @param int $telefonoCompraId
      * @throws \Exception
      */
     private function insertTelefono(
+        $batch_id,
         $imei,
         $marca,
         $modelo,
@@ -104,6 +104,7 @@ class BatchInsertTelefonosUseCase
         }
 
         $telefono = new Telefono();
+        $telefono->batch_id = $batch_id;
         $telefono->imei = $imei;
         $telefono->marca = $marca;
         $telefono->modelo = $modelo;
@@ -113,8 +114,7 @@ class BatchInsertTelefonosUseCase
             $telefono->socio_id = (int) $socioId;
             $telefono->socio_porcentaje = (float) $socioPorcentaje;
         }
-
-
+        $telefono->status = Telefono::STATUS_IN_DRAFT;
 
         if (!$telefono->save()) {
             throw new \Exception("IMEI {$imei}: " . implode(', ', $telefono->getFirstErrors()));

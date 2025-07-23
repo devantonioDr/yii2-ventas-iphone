@@ -17,6 +17,28 @@ $ganancia = GananciaService::calcular($telefono);
         </p>
     </div>
 
+    <?php if ($telefono->telefonoCompra): ?>
+    <div class="seccion">
+        <h4>Factura de Compra</h4>
+        <div class="item">
+            <span>Código</span>
+            <span class="text-right">
+                <?= Html::a(
+                    Html::encode($telefono->telefonoCompra->codigo_factura),
+                    ['/telefono-compra/view', 'id' => $telefono->telefono_compra_id],
+                    ['target' => '_blank', 'data-pjax' => 0]
+                ) ?>
+            </span>
+        </div>
+        <div class="item">
+            <span>Suplidor</span>
+            <span class="text-right">
+                <?= Html::encode($telefono->telefonoCompra->suplidor) ?>
+            </span>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="seccion">
         <h4>Gastos</h4>
         <?php if (count($gastos)): ?>

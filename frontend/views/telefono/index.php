@@ -3,7 +3,6 @@
 use yii\helpers\Html;
 use yii\grid\GridView;
 use yii\widgets\ActiveForm;
-use common\services\telefono\GananciaService;
 use common\models\telefono\Telefono;
 
 /* @var $this yii\web\View */
@@ -40,94 +39,52 @@ $this->registerCss("
                     </div>
                 </div>
                 <div class="box-body">
-                    <!-- Formulario de búsqueda -->
-                    <div class="container-fluid">
-                        <?php $form = ActiveForm::begin([
-                            'action' => ['index'],
-                            'method' => 'get',
-                            'options' => ['class' => 'form-horizontal'],
-                        ]); ?>
-                        <div class="row">
-                            <div class="col-xs-12 col-sm-6 col-md-3">
-                                <?= $form->field($searchModel, 'imei')->textInput(['placeholder' => 'Buscar por IMEI...']) ?>
-                            </div>
-                            <div class="col-xs-12 col-sm-6 col-md-2">
-                                <?= $form->field($searchModel, 'marca')->dropDownList(
-                                    ['' => 'Todas las marcas'] + \yii\helpers\ArrayHelper::map($marcas, 'marca', 'marca'),
-                                    [
-                                        'onchange' => '
-                                            $.get("' . \yii\helpers\Url::to(['telefono/get-modelos-by-marca']) . '?marca=" + $(this).val(), function(data) {
-                                                var select = $("#telefonosearch-modelo");
-                                                select.html("<option value=\"\">Todos los modelos</option>");
-                                                if(data.success) {
-                                                    $.each(data.modelos, function(i, modelo) {
-                                                        select.append("<option value=\"" + modelo.modelo + "\">" + modelo.modelo + "</option>");
-                                                    });
-                                                }
-                                            });
-                                        ',
-                                    ]
-                                ) ?>
-                            </div>
-                            <div class="col-xs-12 col-sm-6 col-md-2">
-                                <?= $form->field($searchModel, 'modelo')->dropDownList(
-                                    ['' => 'Todos los modelos'] + \yii\helpers\ArrayHelper::map($modelos, 'modelo', 'modelo')
-                                ) ?>
-                            </div>
-                            <div class="col-xs-12 col-sm-6 col-md-2">
-                                <?= $form->field($searchModel, 'status')->dropDownList(
-                                    ['' => 'Todos'] + Telefono::getStatusOptions()
-                                ) ?>
-                            </div>
-                            <div class="col-xs-12 col-md-3">
-                                <div class="form-group">
-                                    <label class="control-label">&nbsp;</label>
-                                    <div>
-                                        <?= Html::submitButton('<i class="fa fa-search"></i> <span class="hidden-xs">Buscar</span>', ['class' => 'btn btn-primary btn-block']) ?>
-                                        <?= Html::a('<i class="fa fa-refresh"></i> <span class="hidden-xs">Limpiar</span>', ['index'], ['class' => 'btn btn-default btn-block']) ?>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <?php ActiveForm::end(); ?>
-                    </div>
-
                     <!-- Tabla responsiva para todos los dispositivos -->
                     <div class="table-responsive">
                         <?= GridView::widget([
                             'dataProvider' => $dataProvider,
-                            'filterModel' => null,
+                            'filterModel' => $searchModel,
                             'columns' => [
                                 ['class' => 'yii\grid\SerialColumn'],
                                 [
                                     'attribute' => 'imei',
                                     'format' => 'raw',
                                     'value' => function ($model) {
-                                        return \yii\helpers\Html::a(
-                                            $model->imei,
-                                            'javascript:void(0);',
-                                            [
-                                                'title' => 'Ver desglose de ganancia',
-                                                'onclick' => "cargarDesglose({$model->id})",
-                                                'style' => 'cursor:pointer; text-decoration: underline;',
-                                                'class' => 'text-primary'
-                                            ]
-                                        );
-                                    },
+                                        return Html::a($model->imei, ['edit', 'id' => $model->id]);
+                                    }
                                 ],
-                                'marca',
-                                'modelo',
+                                [
+                                    'attribute' => 'marca',
+                                    'filter' => ['' => 'Todas las marcas'] + \yii\helpers\ArrayHelper::map($marcas, 'marca', 'marca'),
+                                ],
+                                [
+                                    'attribute' => 'modelo',
+                                    'filter' => ['' => 'Todos los modelos'] + \yii\helpers\ArrayHelper::map($modelos, 'modelo', 'modelo'),
+                                ],
+                                [
+                                    'attribute' => 'telefono_compra_id',
+                                    'label' => 'Suplidor',
+                                    'value' => function ($model) {
+                                        return $model->telefonoCompra ? $model->telefonoCompra->suplidor : 'N/A';
+                                    },
+                                    'filter' => \yii\helpers\ArrayHelper::map(\common\models\telefono\TelefonoCompra::find()->select('suplidor')->distinct()->all(), 'suplidor', 'suplidor'),
+                                ],
                                 [
                                     'attribute' => 'status',
                                     'format' => 'raw',
                                     'value' => function ($model) {
-                                        if ($model->status === Telefono::STATUS_EN_TIENDA) {
-                                            return Html::tag('span', 'En Tienda', ['class' => 'label label-success']);
-                                        } elseif ($model->status === Telefono::STATUS_VENDIDO) {
-                                            return Html::tag('span', 'Vendido', ['class' => 'label label-warning']);
-                                        }
-                                        return Html::tag('span', ucfirst($model->status), ['class' => 'label label-default']);
+                                        $statusLabels = [
+                                            Telefono::STATUS_EN_TIENDA => ['class' => 'label-success', 'label' => 'En Tienda'],
+                                            Telefono::STATUS_VENDIDO => ['class' => 'label-warning', 'label' => 'Vendido'],
+                                            Telefono::STATUS_PAGADO => ['class' => 'label-info', 'label' => 'Pagado'],
+                                            Telefono::STATUS_DEVUELTO => ['class' => 'label-danger', 'label' => 'Devuelto'],
+                                            Telefono::STATUS_IN_DRAFT => ['class' => 'label-default', 'label' => 'En Borrador'],
+                                        ];
+
+                                        $status = $statusLabels[$model->status] ?? ['class' => 'label-default', 'label' => ucfirst($model->status)];
+                                        return Html::tag('span', $status['label'], ['class' => 'label ' . $status['class']]);
                                     },
+                                    'filter' => ['' => 'Todos'] + Telefono::getStatusOptions(),
                                     'contentOptions' => ['class' => 'text-center'],
                                 ],
                                 [
@@ -136,6 +93,7 @@ $this->registerCss("
                                     'value' => function ($model) {
                                         return $model->socio ? $model->socio->nombre : 'Sin socio';
                                     },
+                                    'filter' => ['' => 'Todos los socios'] + \yii\helpers\ArrayHelper::map(\common\models\telefono\TelefonoSocio::find()->all(), 'id', 'nombre'),
                                     'contentOptions' => ['class' => 'text-center'],
                                 ],
                                 [

@@ -60,14 +60,57 @@ class GananciaService
 
         foreach ($telefonos as $telefono) {
             $ganancia = self::calcular($telefono);
-            
+
             $total['neta'] += $ganancia['neta'];
             $total['socio'] += $ganancia['socio'];
             $total['empresa'] += $ganancia['empresa'];
             $total['precioAdquisicion'] += $telefono->precio_adquisicion;
             $total['gastos'] += $telefono->getTotalGastos();
         }
-        
+
         return $total;
+    }
+
+    public static function getGananciaSummaryInDraft()
+    {
+        $summary = [];
+        $telefonos = Telefono::find()
+            ->where(['status' => Telefono::STATUS_IN_DRAFT])
+            ->with('telefonoGastos', 'socio', 'telefonoCompra') // Eager load relations
+            ->all();
+
+        foreach ($telefonos as $telefono) {
+            // Usar el ID de compra como clave principal para la agrupación
+            $key = $telefono->batch_id;
+
+            if (!isset($summary[$key])) {
+                $summary[$key] = [
+                    'marca' => $telefono->marca,
+                    'modelo' => $telefono->modelo,
+                    'telefono_compra_id' => $telefono->telefono_compra_id,
+                    'batch_id' => $telefono->batch_id,
+                    'socio_nombre' => $telefono->socio->nombre ?? 'N/A',
+                    'cantidad' => 0,
+                    'precio_adquisicion_total' => 0,
+                    'precio_venta_recomendado_total' => 0,
+                    'ganancia_neta_total' => 0,
+                    'ganancia_socio_total' => 0,
+                    'ganancia_empresa_total' => 0,
+                ];
+            }
+
+            $gananciaIndividual = self::calcular($telefono);
+
+            $summary[$key]['cantidad']++;
+            $summary[$key]['precio_adquisicion_total'] += $telefono->precio_adquisicion;
+            $summary[$key]['precio_venta_recomendado_total'] += $telefono->precio_venta_recomendado;
+            $summary[$key]['ganancia_neta_total'] += $gananciaIndividual['neta'];
+            $summary[$key]['ganancia_socio_total'] += $gananciaIndividual['socio'];
+            $summary[$key]['porcentaje_socio'] = $gananciaIndividual['porcentajeSocio'];
+            $summary[$key]['porcentaje_empresa'] = $gananciaIndividual['porcentajeEmpresa'];
+            $summary[$key]['ganancia_empresa_total'] += $gananciaIndividual['empresa'];
+        }
+
+        return array_values($summary);
     }
 }

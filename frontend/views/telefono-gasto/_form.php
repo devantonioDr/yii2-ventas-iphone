@@ -5,6 +5,26 @@ use yii\widgets\ActiveForm;
 
 /* @var $gasto common\models\telefono\TelefonoGasto */
 /* @var $telefono common\models\telefono\Telefono */
+
+$this->registerJsFile('@web/js/imask.js', ['depends' => [\yii\web\JqueryAsset::class]]);
+
+$inputId = Html::getInputId($gasto, 'monto_gasto');
+$js = <<<JS
+var element = document.getElementById('{$inputId}');
+var maskOptions = {
+    mask: Number,
+    scale: 2,
+    signed: false,
+    thousandsSeparator: ',',
+    padFractionalZeros: true,
+    normalizeZeros: true,
+    radix: '.',
+    mapToRadix: ['.'],
+};
+var mask = IMask(element, maskOptions);
+JS;
+$this->registerJs($js);
+
 ?>
 
 <?php $form = ActiveForm::begin([
@@ -24,9 +44,7 @@ use yii\widgets\ActiveForm;
     </div>
     <div class="col-md-6">
         <?= $form->field($gasto, 'monto_gasto')->textInput([
-            'type' => 'number',
-            'step' => '0.01',
-            'min' => '0',
+            'type' => 'text',
             'placeholder' => '0.00'
         ]) ?>
     </div>

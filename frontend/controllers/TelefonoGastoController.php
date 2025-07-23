@@ -11,9 +11,9 @@ use yii\grid\GridView;
 use yii\data\ActiveDataProvider;
 use common\models\telefono\Telefono;
 use common\models\telefono\TelefonoGasto;
-use common\usecases\telefono\gasto\CreateTelefonoGastoUseCase;
-use common\usecases\telefono\gasto\UpdateTelefonoGastoUseCase;
-use common\usecases\telefono\gasto\DeleteTelefonoGastoUseCase;
+use common\usecases\telefono_gasto\CreateTelefonoGastoUseCase;
+use common\usecases\telefono_gasto\UpdateTelefonoGastoUseCase;
+use common\usecases\telefono_gasto\DeleteTelefonoGastoUseCase;
 
 /**
  * TelefonoGastoController implements the CRUD actions for TelefonoGasto model.
@@ -67,10 +67,22 @@ class TelefonoGastoController extends Controller
         $telefono = $this->findTelefono($telefono_id);
         $gasto = new TelefonoGasto();
         $gasto->telefono_id = $telefono_id;
+        $postData = Yii::$app->request->post('TelefonoGasto', []);
 
-        if ($gasto->load(Yii::$app->request->post()) && $gasto->save()) {
-            Yii::$app->session->setFlash('success', 'Gasto agregado exitosamente.');
-            return $this->redirect(['index', 'telefono_id' => $telefono_id]);
+
+        if ($this->request->isPost) {
+            try {
+                $useCase = new CreateTelefonoGastoUseCase();
+                $useCase->execute(
+                    $telefono_id,
+                    $postData['descripcion'] ?? '',
+                    $postData['monto_gasto'] ?? '0'
+                );
+                Yii::$app->session->setFlash('success', 'Gasto agregado exitosamente.');
+                return $this->redirect(['index', 'telefono_id' => $telefono_id]);
+            } catch (\Exception $e) {
+                Yii::$app->session->setFlash('error', 'Error al crear el gasto: ' . $e->getMessage());
+            }
         }
 
         return $this->render('create', [
@@ -88,10 +100,21 @@ class TelefonoGastoController extends Controller
     {
         $gasto = $this->findModel($id);
         $telefono = $gasto->telefono;
+        $postData = Yii::$app->request->post('TelefonoGasto', []);
 
-        if ($gasto->load(Yii::$app->request->post()) && $gasto->save()) {
-            Yii::$app->session->setFlash('success', 'Gasto actualizado exitosamente.');
-            return $this->redirect(['index', 'telefono_id' => $gasto->telefono_id]);
+        if ($this->request->isPost) {
+            try {
+                $useCase = new UpdateTelefonoGastoUseCase();
+                $useCase->execute(
+                    $id,
+                    $postData['descripcion'] ?? '',
+                    $postData['monto_gasto'] ?? '0'
+                );
+                Yii::$app->session->setFlash('success', 'Gasto actualizado exitosamente.');
+                return $this->redirect(['index', 'telefono_id' => $gasto->telefono_id]);
+            } catch (\Exception $e) {
+                Yii::$app->session->setFlash('error', 'Error al actualizar el gasto: ' . $e->getMessage());
+            }
         }
 
         return $this->render('update', [
@@ -109,11 +132,13 @@ class TelefonoGastoController extends Controller
     {
         $gasto = $this->findModel($id);
         $telefonoId = $gasto->telefono_id;
-        
-        if ($gasto->delete()) {
+
+        try {
+            $useCase = new DeleteTelefonoGastoUseCase();
+            $useCase->execute($id);
             Yii::$app->session->setFlash('success', 'Gasto eliminado exitosamente.');
-        } else {
-            Yii::$app->session->setFlash('error', 'Error al eliminar el gasto.');
+        } catch (\Exception $e) {
+            Yii::$app->session->setFlash('error', 'Error al eliminar el gasto: ' . $e->getMessage());
         }
 
         return $this->redirect(['index', 'telefono_id' => $telefonoId]);

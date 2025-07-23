@@ -4,6 +4,10 @@ namespace common\models\telefono;
 
 use Yii;
 use yii\db\ActiveRecord;
+use common\models\telefono\TelefonoSocioPago;
+use common\models\telefono\TelefonoSocioPagoSearch;
+use common\models\telefono\TelefonoSocioSearch;
+use common\models\telefono\TelefonoSocioWallet;
 
 /**
  * This is the model class for table "telefono_socio".
@@ -62,5 +66,15 @@ class TelefonoSocio extends ActiveRecord
     {
         return $this->hasMany(Telefono::class, ['socio_id' => 'id'])
             ->where(['status' => Telefono::STATUS_VENDIDO]);
+    }
+
+    public function getTelefonoSocioPagos()
+    {
+        return $this->hasMany(TelefonoSocioPago::class, ['telefono_socio_id' => 'id']);
+    }
+
+    public function getWallet()
+    {
+        return $this->hasOne(TelefonoSocioWallet::class, ['telefono_socio_id' => 'id']);
     }
 } 

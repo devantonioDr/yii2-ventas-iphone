@@ -16,28 +16,51 @@ $this->params['breadcrumbs'][] = $this->title;
 $this->registerJsFile('@web/js/imask.js', ['depends' => [\yii\web\JqueryAsset::class]]);
 ?>
 
+<?php if (!empty($inDraftSummary)): ?>
+    <?= $this->render('_in-draft-summary', ['inDraftSummary' => $inDraftSummary]) ?>
+<?php endif; ?>
+
 <div class="telefono-batch-insert">
     <div class="box box-primary">
         <div class="box-body">
             <div class="telefono-form">
                 <?php $form = ActiveForm::begin(); ?>
 
+                <h4>Información del Dispositivo</h4>
+                <hr style="margin-top: 10px; margin-bottom: 20px;">
+
                 <div class="row">
                     <div class="col-md-6">
                         <?= $form->field($model, 'marca')->dropDownList(
-                            \yii\helpers\ArrayHelper::map($marcas, 'marca', 'marca'), [
-                            'prompt' => 'Seleccione una marca',
-                            'id' => 'marca-select'
-                        ]) ?>
+                            \yii\helpers\ArrayHelper::map($marcas, 'marca', 'marca'),
+                            [
+                                'prompt' => 'Seleccione una marca',
+                                'id' => 'marca-select'
+                            ]
+                        ) ?>
                     </div>
                     <div class="col-md-6">
                         <?= $form->field($model, 'modelo')->dropDownList(
-                            \yii\helpers\ArrayHelper::map($modelos, 'modelo', 'modelo'), [
-                            'prompt' => 'Seleccione un modelo',
-                            'id' => 'modelo-select'
-                        ]) ?>
+                            \yii\helpers\ArrayHelper::map($modelos, 'modelo', 'modelo'),
+                            [
+                                'prompt' => 'Seleccione un modelo',
+                                'id' => 'modelo-select'
+                            ]
+                        ) ?>
                     </div>
                 </div>
+
+                <div class="form-group">
+                    <?= $form->field($model, 'imeis_string')->textarea([
+                        'rows' => 10,
+                        'placeholder' => "Ingrese los IMEIs, uno por línea. Ejemplo:&#10;123456789012345&#10;987654321098765"
+                    ])->hint('Cada IMEI debe tener exactamente 15 dígitos numéricos.') ?>
+                </div>
+
+                <br>
+
+                <h4>Información de Compra y Socios</h4>
+                <hr style="margin-top: 10px; margin-bottom: 20px;">
 
                 <div class="row">
                     <div class="col-md-6">
@@ -58,6 +81,11 @@ $this->registerJsFile('@web/js/imask.js', ['depends' => [\yii\web\JqueryAsset::c
                     </div>
                 </div>
 
+                <br>
+
+                <h4>Información Financiera</h4>
+                <hr style="margin-top: 10px; margin-bottom: 20px;">
+
                 <div class="row">
                     <div class="col-md-6">
                         <?= $form->field($model, 'precio_adquisicion')->textInput([
@@ -71,12 +99,7 @@ $this->registerJsFile('@web/js/imask.js', ['depends' => [\yii\web\JqueryAsset::c
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <?= $form->field($model, 'imeis_string')->textarea([
-                        'rows' => 10,
-                        'placeholder' => "Ingrese los IMEIs, uno por línea. Ejemplo:&#10;123456789012345&#10;987654321098765"
-                    ])->hint('Cada IMEI debe tener exactamente 15 dígitos numéricos.') ?>
-                </div>
+                <br>
 
                 <div class="form-group">
                     <?= Html::submitButton('Insertar Teléfonos', ['class' => 'btn btn-success']) ?>
@@ -87,6 +110,8 @@ $this->registerJsFile('@web/js/imask.js', ['depends' => [\yii\web\JqueryAsset::c
             </div>
         </div>
     </div>
+
+
 </div>
 
 <?php

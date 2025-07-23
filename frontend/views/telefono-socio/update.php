@@ -29,16 +29,4 @@ $this->params['breadcrumbs'][] = 'Actualizar';
             <?php ActiveForm::end(); ?>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="box box-info">
-            <div class="box-header with-border">
-                <h3 class="box-title">Desglose de Ganancias Pendientes</h3>
-            </div>
-            <div class="box-body">
-                <?= $this->render('_desglose', [
-                    'ganancia' => $ganancia,
-                ]) ?>
-            </div>
-        </div>
-    </div>
 </div> 

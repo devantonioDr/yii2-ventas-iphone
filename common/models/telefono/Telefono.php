@@ -10,6 +10,7 @@ use yii\db\ActiveRecord;
  * This is the model class for table "telefono".
  *
  * @property int $id
+ * @property string|null $batch_id
  * @property string $imei
  * @property string $marca
  * @property string $modelo
@@ -20,16 +21,30 @@ use yii\db\ActiveRecord;
  * @property TelefonoSocio|null $socio
  * @property float $socio_porcentaje
  * @property string $status
+ * @property int|null $telefono_compra_id
+ * @property TelefonoCompra|null $telefonoCompra
  */
 class Telefono extends ActiveRecord
 {
+    // status inicial del telefono cuando se ingresa a la tienda
     const STATUS_EN_TIENDA = 'en_tienda';
-    const STATUS_VENDIDO = 'vendido';
+
+    // vendido en la tienda pero no se ha pagado a el socio
+    const STATUS_VENDIDO = 'VENDIDO';
+
+    // status inicial cuando aun se esta digitando el telefono
+    const STATUS_IN_DRAFT = 'in_draft';
+
+    const STATUS_DEVUELTO = 'DEVUELTO';
+    const STATUS_PAGADO = 'PAGADO';
 
     /**
      * @var string|null IMEIs como string (para el formulario)
      */
     public $imeis_string = null;
+
+    public $total_gastos;
+    public $ganancia;
 
     /**
      * {@inheritdoc}
@@ -61,20 +76,16 @@ class Telefono extends ActiveRecord
     public function rules()
     {
         return [
-            [['imei', 'marca', 'modelo', 'precio_adquisicion', 'precio_venta_recomendado'], 'required'],
-            // [[], 'number', 'min' => 0],
-            [['fecha_ingreso','precio_adquisicion', 'precio_venta_recomendado'], 'safe'],
-            [['socio_id'], 'integer'],
-            [['imei'], 'string', 'max' => 255],
-            [['marca', 'modelo'], 'string', 'max' => 100],
+            [['imei', 'marca', 'modelo', 'precio_adquisicion', 'precio_venta_recomendado', 'status'], 'required'],
+            [['socio_porcentaje'], 'number'],
+            [['socio_id', 'telefono_compra_id'], 'integer'],
+            [['batch_id','precio_adquisicion', 'precio_venta_recomendado','imeis_string'], 'safe'],
+            [['imei', 'marca', 'modelo', 'status'], 'string', 'max' => 255],
+            [['batch_id'], 'string', 'max' => 36],
             [['imei'], 'unique'],
-            [['imei'], 'match', 'pattern' => '/^[0-9]{15}$/', 'message' => 'El IMEI debe tener exactamente 15 dígitos numéricos.'],
-            [['socio_porcentaje'], 'number', 'min' => 0, 'max' => 100],
-            [['status'], 'string'],
-            [['status'], 'in', 'range' => [self::STATUS_EN_TIENDA, self::STATUS_VENDIDO]],
-            [['status'], 'default', 'value' => self::STATUS_EN_TIENDA],
-            [['imeis_string'], 'safe'],
+            ['status', 'in', 'range' => [self::STATUS_IN_DRAFT, self::STATUS_EN_TIENDA, self::STATUS_VENDIDO, self::STATUS_DEVUELTO, self::STATUS_PAGADO]],
             [['socio_id'], 'exist', 'skipOnError' => true, 'targetClass' => TelefonoSocio::class, 'targetAttribute' => ['socio_id' => 'id']],
+            [['telefono_compra_id'], 'exist', 'skipOnError' => true, 'targetClass' => TelefonoCompra::class, 'targetAttribute' => ['telefono_compra_id' => 'id']],
         ];
     }
 
@@ -107,6 +118,7 @@ class Telefono extends ActiveRecord
         return [
             self::STATUS_EN_TIENDA => 'En tienda',
             self::STATUS_VENDIDO => 'Vendido',
+            self::STATUS_PAGADO => 'Pagado',
         ];
     }
 
@@ -159,6 +171,16 @@ class Telefono extends ActiveRecord
     public function getSocio()
     {
         return $this->hasOne(TelefonoSocio::class, ['id' => 'socio_id']);
+    }
+
+    /**
+     * Gets query for [[TelefonoCompra]].
+     *
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTelefonoCompra()
+    {
+        return $this->hasOne(TelefonoCompra::class, ['id' => 'telefono_compra_id']);
     }
 
     /**

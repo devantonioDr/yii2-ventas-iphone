@@ -9,10 +9,12 @@ use yii\filters\VerbFilter;
 use common\models\telefono\Telefono;
 use common\models\telefono\TelefonoMarcaModelo;
 use common\usecases\telefono\BatchInsertTelefonosUseCase;
-use yii\helpers\ArrayHelper;
 use common\models\telefono\TelefonoSearch;
 use common\models\telefono\TelefonoSocio;
 use common\usecases\telefono\EditTelefonoUseCase;
+use common\services\telefono\GananciaService;
+use common\usecases\telefono\DeleteInDraftTelefonosUseCase;
+use common\usecases\telefono\MoveToInventoryUseCase;
 
 /**
  * TelefonoController implements the CRUD actions for Telefono model.
@@ -46,14 +48,14 @@ class TelefonoController extends Controller
         // Obtener todas las marcas únicas
         $marcas = TelefonoMarcaModelo::find()->select('marca')->distinct()->asArray()->all();
 
-        // Si hay una marca seleccionada, obtener los modelos de esa marca
-        $modelos = isset($searchModel->marca)
-            ? TelefonoMarcaModelo::find()
-            ->select('modelo')
-            ->where(['marca' => $searchModel->marca])
-            ->asArray()
-            ->all()
-            : [];
+        $modelos = [];
+        if (!empty($searchModel->marca)) {
+            $modelos = TelefonoMarcaModelo::find()
+                ->select('modelo')
+                ->where(['marca' => $searchModel->marca])
+                ->asArray()
+                ->all();
+        }
 
         return $this->render('index', [
             'searchModel' => $searchModel,
@@ -92,6 +94,9 @@ class TelefonoController extends Controller
             if (isset($post['Telefono'])) {
                 $model->load($post);
             }
+
+            $transaction = Yii::$app->db->beginTransaction();
+
             try {
                 $useCase = new BatchInsertTelefonosUseCase();
 
@@ -106,22 +111,28 @@ class TelefonoController extends Controller
                 );
 
                 if ($result) {
+                    $transaction->commit();
                     $successCount = $useCase->getSuccessCount();
                     Yii::$app->session->setFlash('success', "Se insertaron {$successCount} teléfonos exitosamente.");
                     return $this->redirect(['/telefono/batch-insert']);
                 }
             } catch (\InvalidArgumentException $e) {
+                $transaction->rollBack();
                 Yii::$app->session->setFlash('error', $e->getMessage());
             } catch (\Exception $e) {
+                $transaction->rollBack();
                 Yii::$app->session->setFlash('error', 'Error al procesar el lote de teléfonos: ' . $e->getMessage());
             }
         }
+
+        $inDraftSummary = GananciaService::getGananciaSummaryInDraft();
 
         return $this->render('batch-insert', [
             'model' => $model,
             'marcas' => $marcas,
             'modelos' => $modelos,
             'socios' => $socios,
+            'inDraftSummary' => $inDraftSummary,
         ]);
     }
 
@@ -237,5 +248,41 @@ class TelefonoController extends Controller
             'gastos' => $gastos,
         ]);
         return $this->asJson(['success' => true, 'html' => $html]);
+    }
+
+    public function actionDeleteInDraft($batch_id)
+    {
+        try {
+            $useCase = new DeleteInDraftTelefonosUseCase();
+            $useCase->execute($batch_id);
+            Yii::$app->session->setFlash('success', 'Se eliminó el grupo de teléfonos en borrador.');
+        } catch (\InvalidArgumentException $e) {
+            Yii::$app->session->setFlash('error', $e->getMessage());
+        } catch (\Exception $e) {
+            Yii::$app->session->setFlash('error', 'Ocurrió un error al eliminar los teléfonos: ' . $e->getMessage());
+        }
+
+        return $this->redirect(['batch-insert']);
+    }
+
+    public function actionMoveToInventory()
+    {
+        $suplidor = Yii::$app->request->post('suplidor');
+        $transaction = Yii::$app->db->beginTransaction();
+
+        try {
+            $useCase = new MoveToInventoryUseCase();
+            $useCase->execute($suplidor);
+            $transaction->commit();
+            Yii::$app->session->setFlash('success', 'Los teléfonos se movieron al inventario exitosamente.');
+        } catch (\InvalidArgumentException $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', $e->getMessage());
+        } catch (\Exception $e) {
+            $transaction->rollBack();
+            Yii::$app->session->setFlash('error', 'Ocurrió un error al mover los teléfonos al inventario: ' . $e->getMessage());
+        }
+
+        return $this->redirect(['batch-insert']);
     }
 }

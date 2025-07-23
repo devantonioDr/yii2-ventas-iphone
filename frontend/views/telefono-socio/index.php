@@ -74,7 +74,7 @@ $this->params['breadcrumbs'][] = $this->title;
                         ],
                         [
                             'class' => 'yii\grid\ActionColumn',
-                            'template' => '{update} {delete} {pagar}',
+                            'template' => '{update} {delete} {pagar} {wallet} {pagos}',
                             'buttons' => [
                                 'update' => function ($url, $model) {
                                     return Html::a('<i class="fa fa-pencil"></i>', $url, [
@@ -102,6 +102,18 @@ $this->params['breadcrumbs'][] = $this->title;
                                         ]);
                                     }
                                     return '';
+                                },
+                                'wallet' => function ($url, $model) {
+                                    return Html::a('<i class="fa fa-google-wallet"></i>', ['wallet/index', 'socio_id' => $model->id], [
+                                        'class' => 'btn btn-primary btn-xs',
+                                        'title' => 'Wallet',
+                                    ]);
+                                },
+                                'pagos' => function ($url, $model) {
+                                    return Html::a('<i class="fa fa-history"></i>', ['/telefono-socio-pago/index', 'TelefonoSocioPagoSearch[socio_id]' => $model->id], [
+                                        'class' => 'btn btn-info btn-xs',
+                                        'title' => 'Historial de Pagos',
+                                    ]);
                                 },
                             ],
                         ],

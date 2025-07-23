@@ -50,7 +50,7 @@ class TelefonoGasto extends ActiveRecord
         return [
             [['telefono_id', 'descripcion', 'monto_gasto'], 'required'],
             [['telefono_id'], 'integer'],
-            [['monto_gasto'], 'number', 'min' => 0],
+            [['monto_gasto'], 'safe'],
             [['fecha_gasto'], 'safe'],
             [['descripcion'], 'string', 'max' => 255],
             [['telefono_id'], 'exist', 'skipOnError' => true, 'targetClass' => Telefono::class, 'targetAttribute' => ['telefono_id' => 'id']],

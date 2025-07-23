@@ -2,7 +2,7 @@
 
 namespace frontend\controllers;
 
-use common\usecases\telefono\AddTelefonoSocioUseCase;
+use common\usecases\socio\CreateSocioUseCase;
 use common\models\telefono\TelefonoSocio;
 use common\models\telefono\TelefonoSocioSearch;
 use Yii;
@@ -11,6 +11,7 @@ use yii\filters\VerbFilter;
 use common\services\telefono\GananciaService;
 use yii\web\NotFoundHttpException;
 use common\models\telefono\Telefono;
+use common\usecases\socio_pago\PagarTelefonoSocioUseCase;
 
 /**
  * TelefonoSocioController maneja las operaciones relacionadas con socios de teléfonos
@@ -66,7 +67,7 @@ class TelefonoSocioController extends Controller
         if (Yii::$app->request->isPost) {
             try {
                 $model->load($post);
-                $useCase = new AddTelefonoSocioUseCase();
+                $useCase = new CreateSocioUseCase();
                 $useCase->execute(
                     $post['TelefonoSocio']['nombre'],
                     (float) $post['TelefonoSocio']['margen_ganancia']
@@ -113,9 +114,14 @@ class TelefonoSocioController extends Controller
             ->all();
 
         if (Yii::$app->request->isPost) {
-            // Aquí se ejecutará el UseCase para procesar el pago
-            Yii::$app->session->setFlash('success', 'El pago se ha procesado exitosamente (simulación).');
-            return $this->redirect(['index']);
+            try {
+                $useCase = new PagarTelefonoSocioUseCase();
+                $pago = $useCase->execute($id);
+                Yii::$app->session->setFlash('success', 'El pago se ha procesado exitosamente.');
+                return $this->redirect(['telefono-socio-pago/view', 'id' => $pago->id]);
+            } catch (\Exception $e) {
+                Yii::$app->session->setFlash('error', $e->getMessage());
+            }
         }
 
         return $this->render('pagar', [
