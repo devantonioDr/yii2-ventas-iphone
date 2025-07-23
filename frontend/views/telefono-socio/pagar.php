@@ -225,6 +225,13 @@ $this->registerJs(<<<JS
         });
         document.getElementById('pago-photos').files = dataTransfer.files;
     }
+
+    document.querySelector('form').addEventListener('submit', function(event) {
+        if (selectedFiles.length === 0) {
+            event.preventDefault();
+            alert('Debe adjuntar al menos una foto del comprobante de pago.');
+        }
+    });
 JS
 ,
     \yii\web\View::POS_END

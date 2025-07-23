@@ -22,6 +22,10 @@ class PagarTelefonoSocioUseCase
         $transaction = \Yii::$app->db->beginTransaction();
 
         try {
+            if (empty($this->photoPaths)) {
+                throw new \Exception("Debe adjuntar al menos una foto del comprobante de pago.");
+            }
+
             $telefonosPendientes = Telefono::find()
                 ->where(['socio_id' => $socioId, 'status' => Telefono::STATUS_VENDIDO])
                 ->all();
