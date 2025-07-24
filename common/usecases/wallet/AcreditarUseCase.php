@@ -65,7 +65,7 @@ class AcreditarUseCase
             throw new Exception('Could not save transaction: ' . json_encode($walletTransaction->errors));
         }
 
-        $uploadDir = 'uploads/socios/' . $this->telefonoSocioId . '/wallet/';
+        $uploadDir = 'uploads/socios/' . $this->telefonoSocioId . '/wallet/creditos/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }

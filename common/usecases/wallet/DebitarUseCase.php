@@ -64,7 +64,7 @@ class DebitarUseCase
             throw new Exception('Could not save transaction: ' . json_encode($transaction->errors));
         }
 
-        $uploadDir = 'uploads/socios/' . $this->telefonoSocioId . '/wallet/';
+        $uploadDir = 'uploads/socios/' . $this->telefonoSocioId . '/wallet/debitos/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }
