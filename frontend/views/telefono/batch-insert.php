@@ -31,24 +31,34 @@ $this->registerJsFile('@web/js/imask.js', ['depends' => [\yii\web\JqueryAsset::c
 
                 <div class="row">
                     <div class="col-md-6">
-                        <?= $form->field($model, 'marca')->dropDownList(
-                            \yii\helpers\ArrayHelper::map($marcas, 'marca', 'marca'),
-                            [
-                                'prompt' => 'Seleccione una marca',
-                                'id' => 'marca-select'
-                            ]
-                        ) ?>
+                        <?= $form->field($model, 'marca')->textInput([
+                            'id' => 'telefono-marca',
+                            'list' => 'marcas-datalist',
+                            'placeholder' => 'Escriba o elija una marca...',
+                            'autocomplete' => 'off',
+                        ]) ?>
                     </div>
                     <div class="col-md-6">
-                        <?= $form->field($model, 'modelo')->dropDownList(
-                            \yii\helpers\ArrayHelper::map($modelos, 'modelo', 'modelo'),
-                            [
-                                'prompt' => 'Seleccione un modelo',
-                                'id' => 'modelo-select'
-                            ]
-                        ) ?>
+                        <?= $form->field($model, 'modelo')->textInput([
+                            'id' => 'telefono-modelo',
+                            'list' => 'modelos-datalist',
+                            'placeholder' => 'Escriba o elija un modelo...',
+                            'autocomplete' => 'off',
+                        ]) ?>
                     </div>
                 </div>
+
+                <!-- Datalists de sugerencias -->
+                <datalist id="marcas-datalist">
+                <?php foreach (\yii\helpers\ArrayHelper::map($marcas, 'marca', 'marca') as $m): ?>
+                    <option value="<?= Html::encode($m) ?>"></option>
+                <?php endforeach; ?>
+                </datalist>
+                <datalist id="modelos-datalist">
+                <?php foreach (\yii\helpers\ArrayHelper::map($modelos, 'modelo', 'modelo') as $mo): ?>
+                    <option value="<?= Html::encode($mo) ?>"></option>
+                <?php endforeach; ?>
+                </datalist>
 
                 <div class="form-group">
                     <?= $form->field($model, 'imeis_string')->textarea([
@@ -119,28 +129,36 @@ $modelos = Url::to(['get-modelos-by-marca']);
 $socioInfo = Url::to(['telefono-socio/get-socio-info']);
 $script = <<<JS
 $(document).ready(function() {
-    // Código existente para marcas y modelos
-    $('#marca-select').change(function() {
-        var marca = $(this).val();
-        var modeloSelect = $('#modelo-select');
-        
-        modeloSelect.html('<option value="">Cargando...</option>');
-        
-        if (marca) {
-            $.get('$modelos', {marca: marca}, function(data) {
-                if (data.success) {
-                    modeloSelect.html('<option value="">Seleccione un modelo</option>');
-                    $.each(data.modelos, function(index, modelo) {
-                        modeloSelect.append('<option value="' + modelo.modelo + '">' + modelo.modelo + '</option>');
-                    });
-                } else {
-                    modeloSelect.html('<option value="">Error al cargar modelos</option>');
-                }
-            });
-        } else {
-            modeloSelect.html('<option value="">Seleccione un modelo</option>');
-        }
+    // Sugerencias dinámicas para modelos según marca usando datalist
+    var marcaInput = $('#telefono-marca');
+    var modeloInput = $('#telefono-modelo');
+    var modelosDatalist = $('#modelos-datalist');
+
+    function cargarModelosDatalist(marca) {
+        var m = (marca || '').trim();
+        modelosDatalist.empty();
+        if (!m) return;
+
+        $.get('$modelos', { marca: m }, function(data) {
+            modelosDatalist.empty();
+            if (data && data.success && Array.isArray(data.modelos)) {
+                data.modelos.forEach(function(row) {
+                    var value = (row && row.modelo) ? row.modelo : '';
+                    if (value) {
+                        modelosDatalist.append('<option value="' + $('<div>').text(value).html() + '"></option>');
+                    }
+                });
+            }
+        });
+    }
+
+    marcaInput.on('change keyup', function() {
+        cargarModelosDatalist($(this).val());
     });
+
+    if (marcaInput.val()) {
+        cargarModelosDatalist(marcaInput.val());
+    }
 
     // Nuevo código para cargar información del socio
     $('#telefono-socio_id').change(function() {

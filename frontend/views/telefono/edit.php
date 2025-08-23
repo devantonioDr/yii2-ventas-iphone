@@ -18,22 +18,30 @@ $this->params['breadcrumbs'][] = 'Editar';
 $this->registerJsFile('@web/js/imask.js', ['depends' => [\yii\web\JqueryAsset::class]]);
 $this->registerJs("
 $(document).ready(function() {
-    $('#telefono-marca').on('change', function() {
-        var marca = $(this).val();
-        if (marca) {
-            $.get('" . \yii\helpers\Url::to(['telefono/get-modelos-by-marca']) . "?marca=' + marca, function(data) {
-                var select = $('#telefono-modelo');
-                select.html('<option value=\"\">Seleccione un modelo</option>');
-                if (data.success) {
-                    $.each(data.modelos, function(i, modelo) {
-                        select.append('<option value=\"' + modelo.modelo + '\">' + modelo.modelo + '</option>');
-                    });
-                }
-            });
-        } else {
-            $('#telefono-modelo').html('<option value=\"\">Seleccione un modelo</option>');
-        }
+    // Sugerencias dinámicas de modelos usando datalist según la marca
+    var modelosDatalist = $('#modelos-datalist');
+    function cargarModelosDatalist(marca) {
+        var m = (marca || '').trim();
+        modelosDatalist.empty();
+        if (!m) return;
+        $.get('" . \yii\helpers\Url::to(['telefono/get-modelos-by-marca']) . "', { marca: m }, function(data) {
+            modelosDatalist.empty();
+            if (data && data.success && Array.isArray(data.modelos)) {
+                $.each(data.modelos, function(i, row) {
+                    var value = (row && row.modelo) ? row.modelo : '';
+                    if (value) {
+                        modelosDatalist.append('<option value=\"' + $('<div>').text(value).html() + '\"></option>');
+                    }
+                });
+            }
+        });
+    }
+    $('#telefono-marca').on('change keyup', function() {
+        cargarModelosDatalist($(this).val());
     });
+    if ($('#telefono-marca').val()) {
+        cargarModelosDatalist($('#telefono-marca').val());
+    }
 
     var socioSelect = $('#telefono-socio_id');
     var porcentajeField = $('.field-telefono-socio_porcentaje');
@@ -147,15 +155,19 @@ $(document).ready(function() {
 
                     <h4 class="page-header" style="margin-top: 0;">Información del Teléfono</h4>
 
-                    <?= $form->field($telefono, 'marca')->dropDownList(
-                        ['' => 'Seleccione una marca'] + ArrayHelper::map($marcas, 'marca', 'marca'),
-                        ['id' => 'telefono-marca']
-                    ) ?>
+                    <?= $form->field($telefono, 'marca')->textInput([
+                        'id' => 'telefono-marca',
+                        'list' => 'marcas-datalist',
+                        'placeholder' => 'Escriba o elija una marca...',
+                        'autocomplete' => 'off',
+                    ]) ?>
 
-                    <?= $form->field($telefono, 'modelo')->dropDownList(
-                        ['' => 'Seleccione un modelo'] + ArrayHelper::map($modelos, 'modelo', 'modelo'),
-                        ['id' => 'telefono-modelo']
-                    ) ?>
+                    <?= $form->field($telefono, 'modelo')->textInput([
+                        'id' => 'telefono-modelo',
+                        'list' => 'modelos-datalist',
+                        'placeholder' => 'Escriba o elija un modelo...',
+                        'autocomplete' => 'off',
+                    ]) ?>
 
                     <?= $form->field($telefono, 'imei')->textInput([
                         'maxlength' => true,
@@ -191,6 +203,17 @@ $(document).ready(function() {
                     ])->hint('Porcentaje de la ganancia que corresponde al socio.') ?>
 
                 </div>
+                <!-- Datalists para sugerencias de marca y modelo -->
+                <datalist id="marcas-datalist">
+                <?php foreach (ArrayHelper::map($marcas, 'marca', 'marca') as $m): ?>
+                    <option value="<?= Html::encode($m) ?>"></option>
+                <?php endforeach; ?>
+                </datalist>
+                <datalist id="modelos-datalist">
+                <?php foreach (ArrayHelper::map($modelos, 'modelo', 'modelo') as $mo): ?>
+                    <option value="<?= Html::encode($mo) ?>"></option>
+                <?php endforeach; ?>
+                </datalist>
                 <div class="box-footer">
                     <div class="form-group" style="margin-bottom: 0;">
                         <div class="col-sm-offset-3 col-sm-9">

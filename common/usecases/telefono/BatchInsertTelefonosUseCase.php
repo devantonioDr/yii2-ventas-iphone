@@ -5,6 +5,7 @@ namespace common\usecases\telefono;
 use Yii;
 use common\models\telefono\Telefono;
 use common\models\telefono\TelefonoSocio;
+use common\models\telefono\TelefonoMarcaModelo;
 
 /**
  * UseCase para insertar lotes de teléfonos
@@ -46,11 +47,13 @@ class BatchInsertTelefonosUseCase
         foreach ($imeis as $imei) {
             $imei = trim($imei);
             if (empty($imei)) continue;
+            // Normalizar marca/modelo y asegurar catálogo
+            $catalog = TelefonoMarcaModelo::findOrCreate($marca, $modelo);
             $this->insertTelefono(
                 $batch_id,
                 $imei,
-                $marca,
-                $modelo,
+                $catalog->marca,
+                $catalog->modelo,
                 $precioAdquisicion,
                 $precioVentaRecomendado,
                 $socioId,

@@ -44,10 +44,13 @@ class EditTelefonoUseCase
             throw new \InvalidArgumentException('El IMEI ya existe en otro teléfono.');
         }
 
+        // Normalizar y asegurar que la combinación marca/modelo exista en el catálogo
+        $catalogEntry = TelefonoMarcaModelo::findOrCreate($marca, $modelo);
+
         // Actualizar el teléfono
         $telefono->imei = $imei;
-        $telefono->marca = $marca;
-        $telefono->modelo = $modelo;
+        $telefono->marca = $catalogEntry->marca;
+        $telefono->modelo = $catalogEntry->modelo;
         $telefono->precio_adquisicion = $precioAdquisicion;
         $telefono->precio_venta_recomendado = $precioVentaRecomendado;
         $telefono->socio_id = $socioId;

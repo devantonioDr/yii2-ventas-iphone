@@ -22,6 +22,7 @@ use frontend\models\JceForm;
             'items' => [
               ['label' => 'Insertar Lote', 'icon' => 'fa fa-plus-circle', 'url' => ['/telefono/batch-insert'],],
               ['label' => 'Listado', 'icon' => 'fa fa-list', 'url' => ['/telefono/index'],],
+              ['label' => 'Marcas y Modelos', 'icon' => 'fa fa-tags', 'url' => ['/telefono-marca-modelo/index'],],
             ]
           ],
           [
