@@ -70,7 +70,7 @@ class TelefonoSocio extends ActiveRecord
 
     public function getTelefonoSocioPagos()
     {
-        return $this->hasMany(TelefonoSocioPago::class, ['telefono_socio_id' => 'id']);
+        return $this->hasMany(TelefonoSocioPago::class, ['socio_id' => 'id']);
     }
 
     public function getWallet()

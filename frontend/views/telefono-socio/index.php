@@ -67,29 +67,53 @@ $this->params['breadcrumbs'][] = $this->title;
                         [
                             'attribute' => 'telefonos_count',
                             'label' => 'Teléfonos Pendientes por Pagar',
+                            'format' => 'raw',
                             'value' => function ($model) {
-                                return $model->getTelefonosPendientesPorPagar()->count();
+                                $count = $model->getTelefonosPendientesPorPagar()->count();
+                                return Html::a($count, ['pagar', 'id' => $model->id], [
+                                    'title' => 'Ir a pagar'
+                                ]);
                             },
+                            'contentOptions' => ['class' => 'text-center'],
+                            'filter' => false,
+                        ],
+                        [
+                            'label' => 'Balance Disponible',
+                            'format' => 'raw',
+                            'value' => function ($model) {
+                                $balance = 0;
+                                if ($model->wallet) {
+                                    $balance = (float)$model->wallet->balance;
+                                } else {
+                                    try {
+                                        $balance = (new \common\usecases\wallet\GetAvailableBalanceUseCase($model->id))->execute();
+                                    } catch (\Throwable $e) {
+                                        $balance = 0;
+                                    }
+                                }
+                                return Html::a('RD$ ' . number_format($balance, 2), ['wallet/index', 'socio_id' => $model->id]);
+                            },
+                            'contentOptions' => ['class' => 'text-right'],
+                            'filter' => false,
+                        ],
+                        [
+                            'label' => 'Pagos',
+                            'format' => 'raw',
+                            'value' => function ($model) {
+                                $count = $model->getTelefonoSocioPagos()->count();
+                                return Html::a($count, ['/telefono-socio-pago/index', 'TelefonoSocioPagoSearch[socio_id]' => $model->id]);
+                            },
+                            'contentOptions' => ['class' => 'text-center'],
                             'filter' => false,
                         ],
                         [
                             'class' => 'yii\grid\ActionColumn',
-                            'template' => '{update} {delete} {pagar} {wallet} {pagos}',
+                            'template' => '{update} {pagar}',
                             'buttons' => [
                                 'update' => function ($url, $model) {
                                     return Html::a('<i class="fa fa-pencil"></i>', $url, [
                                         'class' => 'btn btn-warning btn-xs',
                                         'title' => 'Editar',
-                                    ]);
-                                },
-                                'delete' => function ($url, $model) {
-                                    return Html::a('<i class="fa fa-trash"></i>', $url, [
-                                        'class' => 'btn btn-danger btn-xs',
-                                        'title' => 'Eliminar',
-                                        'data' => [
-                                            'confirm' => '¿Está seguro de que desea eliminar este socio?',
-                                            'method' => 'post',
-                                        ],
                                     ]);
                                 },
                                 'pagar' => function ($url, $model) {
@@ -102,18 +126,6 @@ $this->params['breadcrumbs'][] = $this->title;
                                         ]);
                                     }
                                     return '';
-                                },
-                                'wallet' => function ($url, $model) {
-                                    return Html::a('<i class="fa fa-google-wallet"></i>', ['wallet/index', 'socio_id' => $model->id], [
-                                        'class' => 'btn btn-primary btn-xs',
-                                        'title' => 'Wallet',
-                                    ]);
-                                },
-                                'pagos' => function ($url, $model) {
-                                    return Html::a('<i class="fa fa-history"></i>', ['/telefono-socio-pago/index', 'TelefonoSocioPagoSearch[socio_id]' => $model->id], [
-                                        'class' => 'btn btn-info btn-xs',
-                                        'title' => 'Historial de Pagos',
-                                    ]);
                                 },
                             ],
                         ],
