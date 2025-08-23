@@ -174,9 +174,11 @@ $(document).ready(function() {
                         'placeholder' => 'Ingrese el IMEI del teléfono'
                     ]) ?>
 
-                    <?= $form->field($telefono, 'status')->dropDownList(
-                        \common\models\telefono\Telefono::getStatusOptions()
-                    ) ?>
+                    <?php
+                    $statusOptions = \common\models\telefono\Telefono::getStatusOptions();
+                    unset($statusOptions[\common\models\telefono\Telefono::STATUS_PAGADO]);
+                    ?>
+                    <?= $form->field($telefono, 'status')->dropDownList($statusOptions) ?>
 
                     <h4 class="page-header">Información Financiera</h4>
 

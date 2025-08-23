@@ -15,6 +15,7 @@ use common\usecases\telefono\EditTelefonoUseCase;
 use common\services\telefono\GananciaService;
 use common\usecases\telefono\DeleteInDraftTelefonosUseCase;
 use common\usecases\telefono\MoveToInventoryUseCase;
+use common\usecases\telefono\MarkTelefonoAsVendidoUseCase;
 
 /**
  * TelefonoController implements the CRUD actions for Telefono model.
@@ -31,6 +32,9 @@ class TelefonoController extends Controller
                 'class' => VerbFilter::className(),
                 'actions' => [
                     'delete' => ['POST'],
+                    'mark-as-vendido' => ['POST'],
+                    'update-precio-adquisicion' => ['POST'],
+                    'preview-ganancia' => ['POST'],
                 ],
             ],
         ];
@@ -284,5 +288,102 @@ class TelefonoController extends Controller
         }
 
         return $this->redirect(['batch-insert']);
+    }
+
+    public function actionUpdatePrecioAdquisicion($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $precio = (float)Yii::$app->request->post('precio_adquisicion');
+        if ($precio <= 0) {
+            return ['success' => false, 'message' => 'El precio de adquisición debe ser mayor a 0.'];
+        }
+
+        $telefono = \common\models\telefono\Telefono::findOne((int)$id);
+        if (!$telefono) {
+            return ['success' => false, 'message' => 'Teléfono no encontrado'];
+        }
+
+        // No persistimos; solo calculamos usando el precio temporal
+        $precioOriginal = $telefono->precio_adquisicion;
+        $telefono->precio_adquisicion = $precio;
+        $ganancia = GananciaService::calcular($telefono);
+        // Restaurar en memoria (no estrictamente necesario)
+        $telefono->precio_adquisicion = $precioOriginal;
+
+        return [
+            'success' => true,
+            'ganancia' => $ganancia,
+            'precio_adquisicion' => $precio,
+            'precio_venta_recomendado' => $telefono->precio_venta_recomendado,
+        ];
+    }
+
+    public function actionPreviewGanancia($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+        $precioVenta = (float)Yii::$app->request->post('precio_venta');
+        if ($precioVenta <= 0) {
+            return ['success' => false, 'message' => 'El precio de venta debe ser mayor a 0.'];
+        }
+
+        $telefono = Telefono::findOne((int)$id);
+        if (!$telefono) {
+            return ['success' => false, 'message' => 'Teléfono no encontrado'];
+        }
+
+        // Calcular sin persistir
+        $precioOriginal = $telefono->precio_venta_recomendado;
+        $telefono->precio_venta_recomendado = $precioVenta;
+        $ganancia = GananciaService::calcular($telefono);
+        $telefono->precio_venta_recomendado = $precioOriginal;
+
+        return [
+            'success' => true,
+            'ganancia' => $ganancia,
+            'precio_venta' => $precioVenta,
+            'precio_adquisicion' => $telefono->precio_adquisicion,
+            'gastos' => $telefono->getTotalGastos(),
+            'costo_total' => $telefono->getCostoTotal(),
+        ];
+    }
+
+    /**
+     * Devuelve el HTML del modal de venta para un teléfono (AJAX)
+     * @param int $id
+     * @return string
+     */
+    public function actionSellModal($id)
+    {
+        $telefono = Telefono::findOne((int)$id);
+        if (!$telefono) {
+            return $this->renderContent('<div class="alert alert-danger">Teléfono no encontrado.</div>');
+        }
+
+        $ganancia = GananciaService::calcular($telefono);
+        return $this->renderPartial('_sell-modal-ajax', [
+            'telefono' => $telefono,
+            'ganancia' => $ganancia,
+            'costo_total' => $telefono->getCostoTotal(),
+        ]);
+    }
+
+    public function actionMarkAsVendido($id)
+    {
+        Yii::$app->response->format = Response::FORMAT_JSON;
+
+        $transaction = Yii::$app->db->beginTransaction();
+        try {
+            $useCase = new MarkTelefonoAsVendidoUseCase();
+            $precioVenta = (float)Yii::$app->request->post('precio_venta');
+            $useCase->execute((int)$id, $precioVenta);
+            $transaction->commit();
+            return ['success' => true, 'message' => 'Teléfono marcado como vendido'];
+        } catch (\InvalidArgumentException $e) {
+            $transaction->rollBack();
+            return ['success' => false, 'message' => $e->getMessage()];
+        } catch (\Throwable $e) {
+            $transaction->rollBack();
+            return ['success' => false, 'message' => 'Error al marcar como vendido'];
+        }
     }
 }
